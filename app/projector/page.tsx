@@ -169,31 +169,59 @@ function ResultView({ data }: { data: Snapshot }) {
   const r = data.round!;
   const res = r.result;
   const ordered = res ? [res.podium[1], res.podium[0], res.podium[2]] : [];
-  const heights = ['22vmin', '30vmin', '17vmin'];
+  const heights = ['20vmin', '28vmin', '15vmin'];
+  const standings = data.leaderboard.slice(0, 8);
   return (
-    <div className="flex-1 flex flex-col px-[3vmin]">
-      <div className="text-center">
-        <div className="text-[2vmin] uppercase tracking-[0.3em] fh-mono text-gold">Round {r.idx} results</div>
-        <div className="text-[5vmin] font-black leading-tight mt-1">
-          {res?.targetSurvived ? `${r.target?.nickname} survived (+5)` : `${r.target?.nickname} caught by ${res?.caughtCount} in ${res?.caughtAt ?? ''}`}
+    <div className="flex-1 grid grid-cols-[1.55fr_1fr] gap-[2vmin] px-[2vmin] min-h-0">
+      {/* LEFT — this round's podium */}
+      <div className="flex flex-col min-h-0">
+        <div className="text-center">
+          <div className="text-[2vmin] uppercase tracking-[0.3em] fh-mono text-gold">Round {r.idx} results</div>
+          <div className="text-[4vmin] font-black leading-tight mt-1">
+            {res?.targetSurvived ? `${r.target?.nickname} survived (+5)` : `${r.target?.nickname} caught by ${res?.caughtCount} in ${res?.caughtAt ?? ''}`}
+          </div>
+        </div>
+        <div className="flex-1 flex items-end justify-center gap-[2.5vmin] pb-[2vmin]">
+          {res && res.podium.length > 0 ? ordered.map((p, i) => {
+            if (!p) return <div key={`e-${i}`} className="w-[15vmin]" />;
+            const medal = (['silver', 'gold', 'bronze'] as const)[i];
+            const col = { gold: '#FFD24A', silver: '#C9D2DA', bronze: '#E0934A' }[medal];
+            return (
+              <div key={p.rank} className="flex flex-col items-center fh-up" style={{ animationDelay: `${i * 120}ms` }}>
+                <div className="relative"><SelfieBubble name={p.nickname} hue={p.hue} selfie={p.selfie} size={p.rank === 1 ? 110 : 84} frame={medal} /><div className="absolute -bottom-2 -right-2 h-[3.5vmin] w-[3.5vmin] rounded-full grid place-items-center fh-mono text-[1.8vmin] font-bold text-void" style={{ background: col }}>{p.rank}</div></div>
+                <div className="mt-[1.2vmin] text-[2.6vmin] font-black">{p.nickname}</div>
+                <div className="text-[1.4vmin] text-muted fh-mono">{p.time}</div>
+                <div className="mt-[1.2vmin] w-[15vmin] rounded-t-2xl border-t-2 border-x relative" style={{ height: heights[i], background: `linear-gradient(180deg, ${col}33, ${col}08)`, borderColor: `${col}66` }}>
+                  <div className="absolute inset-x-0 bottom-[1.5vmin] text-center"><div className="fh-mono text-[4.2vmin] font-black" style={{ color: col, textShadow: `0 0 30px ${col}` }}>+{p.points}</div></div>
+                </div>
+              </div>
+            );
+          }) : <div className="text-[3vmin] text-muted self-center mb-[6vmin]">No one caught {r.target?.nickname} — they survived! 🏃</div>}
         </div>
       </div>
-      <div className="flex-1 flex items-end justify-center gap-[3vmin] pb-[3vmin]">
-        {res && res.podium.length > 0 ? ordered.map((p, i) => {
-          if (!p) return <div key={`e-${i}`} className="w-[18vmin]" />;
-          const medal = (['silver', 'gold', 'bronze'] as const)[i];
-          const col = { gold: '#FFD24A', silver: '#C9D2DA', bronze: '#E0934A' }[medal];
-          return (
-            <div key={p.rank} className="flex flex-col items-center fh-up" style={{ animationDelay: `${i * 120}ms` }}>
-              <div className="relative"><SelfieBubble name={p.nickname} hue={p.hue} selfie={p.selfie} size={p.rank === 1 ? 130 : 100} frame={medal} /><div className="absolute -bottom-2 -right-2 h-[4vmin] w-[4vmin] rounded-full grid place-items-center fh-mono text-[2vmin] font-bold text-void" style={{ background: col }}>{p.rank}</div></div>
-              <div className="mt-[1.5vmin] text-[3vmin] font-black">{p.nickname}</div>
-              <div className="text-[1.6vmin] text-muted fh-mono">{p.time}</div>
-              <div className="mt-[1.5vmin] w-[18vmin] rounded-t-2xl border-t-2 border-x relative" style={{ height: heights[i], background: `linear-gradient(180deg, ${col}33, ${col}08)`, borderColor: `${col}66` }}>
-                <div className="absolute inset-x-0 bottom-[2vmin] text-center"><div className="fh-mono text-[5vmin] font-black" style={{ color: col, textShadow: `0 0 30px ${col}` }}>+{p.points}</div></div>
+
+      {/* RIGHT — overall standings across rounds */}
+      <div className="flex flex-col min-h-0 rounded-2xl bg-surface/50 border border-line p-[1.5vmin]">
+        <div className="flex items-center justify-between px-[0.5vmin] mb-[1.2vmin]">
+          <div className="text-[1.6vmin] uppercase fh-mono tracking-[0.3em] text-cyan flex items-center gap-2">
+            <Icon.Trophy size={16} /> Overall
+          </div>
+          <Pill tone="muted" size="lg">Round {r.idx} / {data.event.roundsPlanned}</Pill>
+        </div>
+        <div className="flex-1 flex flex-col gap-[0.7vmin] min-h-0 overflow-hidden">
+          {standings.length === 0 && <div className="text-[1.8vmin] text-muted text-center mt-[4vmin]">No scores yet.</div>}
+          {standings.map((row, i) => (
+            <div key={row.id} className="flex items-center gap-[1.2vmin] rounded-xl bg-surface/70 border border-line px-[1.2vmin] h-[5.2vmin]">
+              <div className="w-[3vmin] text-center">{row.medal ? <span className="text-[2vmin]">{['🥇', '🥈', '🥉'][i]}</span> : <span className="fh-mono text-[1.7vmin] font-bold text-muted">{String(row.rank).padStart(2, '0')}</span>}</div>
+              <Avatar name={row.nickname} hue={row.hue} selfie={row.selfie} size={34} medal={row.medal} />
+              <div className="flex-1 min-w-0">
+                <div className="text-[1.9vmin] font-bold truncate">{row.nickname}</div>
+                <div className="text-[1.2vmin] text-muted">{row.wins} win{row.wins === 1 ? '' : 's'}</div>
               </div>
+              <div className="fh-mono text-[2.6vmin] font-black"><DigitRoll value={row.pts} /></div>
             </div>
-          );
-        }) : <div className="text-[3vmin] text-muted">No one caught {r.target?.nickname} — they survived! 🏃</div>}
+          ))}
+        </div>
       </div>
     </div>
   );
